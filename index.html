@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistem Absensi Smartcard</title>
-  <!-- Library Pembaca QR Code -->
+  <!-- Library QR Code Scanner -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     * { box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f4f6f9;
+      background-color: #f0f2f5;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -19,14 +19,16 @@
       padding: 15px;
     }
     .card {
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      background: #ffffff;
+      padding: 28px;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
       width: 100%;
       max-width: 480px;
       text-align: center;
     }
+    h2 { margin: 0 0 6px 0; color: #1a1a1a; }
+    .subtitle { color: #666; font-size: 14px; margin-bottom: 20px; }
     .btn-group {
       display: flex;
       gap: 8px;
@@ -34,59 +36,74 @@
       margin-bottom: 20px;
     }
     button {
-      padding: 10px 14px;
+      flex: 1;
+      padding: 11px 10px;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       background-color: #007bff;
       color: white;
       cursor: pointer;
       font-weight: 600;
-      transition: 0.2s;
+      font-size: 13px;
+      transition: background 0.2s, transform 0.1s;
     }
     button:hover { background-color: #0056b3; }
-    button.active { background-color: #28a745; }
+    button:active { transform: scale(0.98); }
+    button.active { background-color: #28a745; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3); }
     .mode-section {
-      border: 1px solid #e0e0e0;
+      border: 1px solid #e2e8f0;
       padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      background: #fafafa;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      background: #f8fafc;
     }
+    .mode-section h4 { margin: 0 0 8px 0; color: #334155; }
+    .mode-desc { font-size: 12px; color: #64748b; margin: 0 0 12px 0; }
     input[type="text"] {
       width: 100%;
       padding: 12px;
-      margin-top: 10px;
       border: 2px solid #007bff;
-      border-radius: 6px;
+      border-radius: 8px;
       text-align: center;
       font-size: 16px;
       outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus { border-color: #28a745; }
+    #reader {
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
     }
     #statusBox {
-      padding: 15px;
-      border-radius: 8px;
+      padding: 16px;
+      border-radius: 10px;
       display: none;
       margin-top: 15px;
+      animation: fadeIn 0.3s ease;
     }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    .loading { background-color: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
     .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     #fotoSiswa {
       width: 130px;
-      height: 160px;
+      height: 165px;
       object-fit: cover;
       border-radius: 8px;
-      margin: 12px auto 0 auto;
-      display: block;
+      margin: 14px auto 0 auto;
+      display: none;
       border: 3px solid #28a745;
+      background: #fff;
     }
-    #reader { width: 100%; margin-top: 10px; min-height: 200px; }
   </style>
 </head>
 <body>
 
 <div class="card">
   <h2>Sistem Absensi</h2>
-  <p style="color:#666; font-size:14px;">Pilih metode absensi:</p>
+  <p class="subtitle">Pilih metode absensi yang digunakan:</p>
 
   <div class="btn-group">
     <button id="btnRfid" class="active" onclick="switchMode('rfid')">💳 RFID / Barcode</button>
@@ -94,50 +111,57 @@
     <button id="btnNfc" onclick="switchMode('nfc')">📱 NFC (HP)</button>
   </div>
 
-  <!-- MODE RFID -->
+  <!-- MODE 1: RFID / BARCODE READER -->
   <div id="modeRfid" class="mode-section">
-    <h4 style="margin-top:0;">Tempelkan Kartu RFID</h4>
-    <p style="font-size: 12px; color: #666;">Pastikan kursor ada di dalam kotak input ini saat menempelkan kartu.</p>
-    <input type="text" id="rfidInput" placeholder="Tap kartu di sini..." autofocus onchange="prosesAbsen(this.value)">
+    <h4>Tempelkan Kartu RFID</h4>
+    <p class="mode-desc">Pastikan kursor aktif di dalam kotak di bawah ini sebelum menempelkan kartu.</p>
+    <input type="text" id="rfidInput" placeholder="Tap kartu di sini..." autofocus autocomplete="off">
   </div>
 
-  <!-- MODE QR CODE -->
+  <!-- MODE 2: QR CODE KAMERA -->
   <div id="modeQr" class="mode-section" style="display: none;">
-    <h4 style="margin-top:0;">Scan QR Code</h4>
+    <h4>Scan QR Code</h4>
+    <p class="mode-desc">Arahkan kode QR kartu ke kamera perangkat.</p>
     <div id="reader"></div>
   </div>
 
-  <!-- MODE NFC (HP) -->
+  <!-- MODE 3: WEB NFC (ANDROID) -->
   <div id="modeNfc" class="mode-section" style="display: none;">
-    <h4 style="margin-top:0;">Scan NFC Smartphone</h4>
-    <p style="font-size: 12px; color: #666;">Tekan tombol lalu tempelkan kartu NFC/KTM ke belakang HP (Chrome Android).</p>
-    <button style="background-color: #28a745; width:100%; margin-top:10px;" onclick="mulaiScanNFC()">Mulai Scan NFC</button>
+    <h4>Scan NFC Smartphone</h4>
+    <p class="mode-desc">Khusus Google Chrome di HP Android yang memiliki sensor NFC.</p>
+    <button style="background-color: #28a745; width: 100%; padding: 12px;" onclick="mulaiScanNFC()">Mulai Scan NFC</button>
   </div>
 
-  <!-- KOTAK NOTIFIKASI & FOTO -->
+  <!-- KOTAK STATUS & FOTO SISWA -->
   <div id="statusBox">
     <div id="statusText"></div>
-    <img id="fotoSiswa" src="" alt="Foto Siswa" style="display:none;">
+    <img id="fotoSiswa" src="" alt="Foto Siswa">
   </div>
 </div>
 
 <script>
-  // ⚠️ TEMPELKAN URL WEB APP GOOGLE APPS SCRIPT ANDA DI SINI
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbycOKYgZpdPbJsAFoPsDno-r6B1m4rbadAiSpHG7htlz4h_z60Y4VX0vPC_NnG5lRqs_g/exec"; 
+  // ⚠️ WAJIB GANTI DENGAN URL WEB APP APPS SCRIPT MILIK ANDA (BERAKHIRAN /exec)
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx78Y-oxDXnNUggdhv2dN6-sndbACEEFeTkEJ12sJXlJFlEG4hGXcyEsBFbG6uhDkYX/exec";
 
   let html5QrCode = null;
+  let isProcessing = false; // Mencegah double scan dalam waktu bersamaan
 
-  // 1. Ubah link Google Drive biasa menjadi Direct Link Gambar
+  // Event Listener untuk tombol Enter dari RFID Reader USB
+  document.getElementById("rfidInput").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      prosesAbsen(this.value.trim());
+    }
+  });
+
+  // 1. Konversi Link Google Drive menjadi Direct Image URL
   function formatDriveUrl(url) {
     if (!url) return "";
-    var fileIdMatch = url.toString().match(/[-\w]{25,}/);
-    if (fileIdMatch) {
-      return "https://lh3.googleusercontent.com/d/" + fileIdMatch[0];
-    }
-    return url;
+    const match = url.toString().match(/[-\w]{25,}/);
+    return match ? "https://lh3.googleusercontent.com/d/" + match[0] : url;
   }
 
-  // 2. Navigasi Mode Absensi
+  // 2. Perpindahan Mode Absensi
   function switchMode(mode) {
     document.getElementById('modeRfid').style.display = 'none';
     document.getElementById('modeQr').style.display = 'none';
@@ -147,8 +171,9 @@
     document.getElementById('btnQr').classList.remove('active');
     document.getElementById('btnNfc').classList.remove('active');
 
+    // Hentikan kamera QR jika sedang berjalan
     if (html5QrCode && html5QrCode.isScanning) {
-      html5QrCode.stop().catch(err => console.log(err));
+      html5QrCode.stop().catch(err => console.warn("Stop kamera:", err));
     }
 
     if (mode === 'rfid') {
@@ -165,75 +190,103 @@
     }
   }
 
-  // 3. Membuka Kamera QR Code
+  // 3. Jalankan Kamera QR Code Otomatis
   function startQrCamera() {
     html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start(
       { facingMode: "environment" },
       { fps: 10, qrbox: { width: 220, height: 220 } },
       (decodedText) => {
-        prosesAbsen(decodedText);
+        if (!isProcessing) {
+          prosesAbsen(decodedText.trim());
+        }
       },
-      (errorMessage) => {}
-    ).catch(err => {
-      alert("Gagal membuka kamera. Pastikan izin kamera diizinkan di browser.");
+      () => {} // Abaikan log frame kosong
+    ).catch(() => {
+      alert("Gagal membuka kamera. Pastikan izin kamera di browser sudah diaktifkan.");
     });
   }
 
-  // 4. Membaca NFC (Khusus HP Android)
+  // 4. Jalankan Web NFC API (Chrome Android)
   async function mulaiScanNFC() {
     if ('NDEFReader' in window) {
       try {
         const ndef = new NDEFReader();
         await ndef.scan();
-        alert("Sensor NFC Aktif! Tempelkan kartu ke belakang HP.");
-        
+        alert("Sensor NFC Aktif! Tempelkan kartu ke bagian belakang HP.");
+
         ndef.addEventListener("reading", ({ serialNumber }) => {
-          prosesAbsen(serialNumber);
+          if (!isProcessing && serialNumber) {
+            // Hapus tanda titik dua (:) pada serial number NFC jika ada
+            const cleanSerial = serialNumber.replace(/:/g, "").toUpperCase();
+            prosesAbsen(cleanSerial);
+          }
         });
       } catch (error) {
-        alert("Error NFC: " + error.message);
+        alert("Gagal mengaktifkan NFC: " + error.message);
       }
     } else {
-      alert("Maaf, browser atau perangkat ini tidak mendukung Web NFC API. Gunakan Chrome di Android.");
+      alert("Perangkat/Browser ini tidak mendukung NFC. Gunakan Google Chrome di HP Android.");
     }
   }
 
-  // 5. Mengirim Data & Menampilkan Foto
-  function prosesAbsen(rfidCode) {
-    if (!rfidCode) return;
+  // 5. Kirim ID Kartu ke Google Apps Script
+  function prosesAbsen(kodeKartu) {
+    if (!kodeKartu || isProcessing) return;
 
-    var statusBox = document.getElementById("statusBox");
-    var statusText = document.getElementById("statusText");
-    var fotoElement = document.getElementById("fotoSiswa");
+    if (SCRIPT_URL.includes("AKfycb...")) {
+      alert("⚠️ Anda belum mengganti SCRIPT_URL dengan URL Web App Apps Script milik Anda!");
+      return;
+    }
+
+    isProcessing = true;
+    const statusBox = document.getElementById("statusBox");
+    const statusText = document.getElementById("statusText");
+    const fotoElement = document.getElementById("fotoSiswa");
 
     statusBox.style.display = "block";
-    statusBox.className = "card";
-    statusText.innerHTML = "⌛ Memproses absensi...";
+    statusBox.className = "loading";
+    statusText.innerHTML = "⌛ Memproses data kartu...";
     fotoElement.style.display = "none";
 
-    fetch(SCRIPT_URL + "?action=getStudent&rfid=" + encodeURIComponent(rfidCode))
-      .then(res => res.json())
+    const requestUrl = `${SCRIPT_URL}?action=getStudent&rfid=${encodeURIComponent(kodeKartu)}`;
+
+    fetch(requestUrl, {
+      method: "GET",
+      redirect: "follow"
+    })
+      .then(response => {
+        if (!response.ok) throw new Error("HTTP Error " + response.status);
+        return response.json();
+      })
       .then(data => {
         if (data.status === "success") {
           statusBox.className = "success";
-          statusText.innerHTML = "<b>✅ Berhasil: " + data.nama + "</b><br><small>(" + data.kelas + ") - " + data.waktu + "</small>";
-          
+          statusText.innerHTML = `<b>✅ Berhasil: ${data.nama}</b><br><small>Kelas: ${data.kelas} | Waktu: ${data.waktu}</small>`;
+
           if (data.foto) {
             fotoElement.src = formatDriveUrl(data.foto);
             fotoElement.style.display = "block";
           }
         } else {
           statusBox.className = "error";
-          statusText.innerHTML = "<b>❌ Gagal:</b> " + data.message;
+          statusText.innerHTML = `<b>❌ Gagal:</b> ${data.message}`;
         }
-        document.getElementById("rfidInput").value = "";
-        document.getElementById("rfidInput").focus();
       })
       .catch(err => {
+        console.error("Fetch error:", err);
         statusBox.className = "error";
-        statusText.innerHTML = "<b>❌ Error Koneksi Server.</b>";
-        document.getElementById("rfidInput").value = "";
+        statusText.innerHTML = "<b>❌ Error Koneksi Server.</b><br><small>Pastikan URL Web App benar & akses diatur ke 'Anyone'.</small>";
+      })
+      .finally(() => {
+        const rfidInput = document.getElementById("rfidInput");
+        rfidInput.value = "";
+        rfidInput.focus();
+
+        // Cooldown 2.5 detik sebelum menerima scan berikutnya
+        setTimeout(() => {
+          isProcessing = false;
+        }, 2500);
       });
   }
 </script>
