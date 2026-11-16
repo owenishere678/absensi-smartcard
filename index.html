@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistem Absensi Smartcard</title>
-  <!-- Library QR Code Scanner -->
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -35,9 +33,9 @@
       justify-content: center;
       margin-bottom: 20px;
     }
-    button {
+    button.tab-btn {
       flex: 1;
-      padding: 11px 10px;
+      padding: 11px 8px;
       border: none;
       border-radius: 8px;
       background-color: #007bff;
@@ -47,9 +45,12 @@
       font-size: 13px;
       transition: background 0.2s, transform 0.1s;
     }
-    button:hover { background-color: #0056b3; }
-    button:active { transform: scale(0.98); }
-    button.active { background-color: #28a745; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3); }
+    button.tab-btn:hover { background-color: #0056b3; }
+    button.tab-btn:active { transform: scale(0.98); }
+    button.tab-btn.active {
+      background-color: #28a745;
+      box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
     .mode-section {
       border: 1px solid #e2e8f0;
       padding: 20px;
@@ -70,11 +71,25 @@
       transition: border-color 0.2s;
     }
     input[type="text"]:focus { border-color: #28a745; }
-    #reader {
-      width: 100%;
+    .btn-nfc-hp {
+      background-color: #28a745;
+      color: white;
+      border: none;
       border-radius: 8px;
-      overflow: hidden;
-      background: #000;
+      width: 100%;
+      padding: 13px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-nfc-hp:hover { background-color: #218838; }
+    #nfcStatusInfo {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #28a745;
+      font-weight: 600;
+      display: none;
     }
     #statusBox {
       padding: 16px;
@@ -83,7 +98,10 @@
       margin-top: 15px;
       animation: fadeIn 0.3s ease;
     }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     .loading { background-color: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
     .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
@@ -106,30 +124,31 @@
   <p class="subtitle">Pilih metode absensi yang digunakan:</p>
 
   <div class="btn-group">
-    <button id="btnRfid" class="active" onclick="switchMode('rfid')">💳 RFID / Barcode</button>
-    <button id="btnQr" onclick="switchMode('qr')">📷 QR Code</button>
-    <button id="btnNfc" onclick="switchMode('nfc')">📱 NFC (HP)</button>
+    <button id="btnRfid" class="tab-btn active" onclick="switchMode('rfid')">💳 RFID Reader</button>
+    <button id="btnQr" class="tab-btn" onclick="switchMode('qr')">🔫 Alat QR Code</button>
+    <button id="btnNfc" class="tab-btn" onclick="switchMode('nfc')">📱 NFC (HP)</button>
   </div>
 
-  <!-- MODE 1: RFID / BARCODE READER -->
+  <!-- MODE 1: RFID READER -->
   <div id="modeRfid" class="mode-section">
     <h4>Tempelkan Kartu RFID</h4>
     <p class="mode-desc">Pastikan kursor aktif di dalam kotak di bawah ini sebelum menempelkan kartu.</p>
-    <input type="text" id="rfidInput" placeholder="Tap kartu di sini..." autofocus autocomplete="off">
+    <input type="text" id="rfidInput" placeholder="Tap kartu RFID di sini..." autofocus autocomplete="off">
   </div>
 
-  <!-- MODE 2: QR CODE KAMERA -->
+  <!-- MODE 2: ALAT SCANNER QR CODE -->
   <div id="modeQr" class="mode-section" style="display: none;">
-    <h4>Scan QR Code</h4>
-    <p class="mode-desc">Arahkan kode QR kartu ke kamera perangkat.</p>
-    <div id="reader"></div>
+    <h4>Scan dengan Alat Scanner QR Code</h4>
+    <p class="mode-desc">Pastikan kursor aktif di dalam kotak di bawah, lalu tembakkan alat scanner ke kode QR.</p>
+    <input type="text" id="qrScannerInput" placeholder="Arahkan alat scanner ke QR Code..." autocomplete="off">
   </div>
 
-  <!-- MODE 3: WEB NFC (ANDROID) -->
+  <!-- MODE 3: NFC MELALUI HP -->
   <div id="modeNfc" class="mode-section" style="display: none;">
     <h4>Scan NFC Smartphone</h4>
-    <p class="mode-desc">Khusus Google Chrome di HP Android yang memiliki sensor NFC.</p>
-    <button style="background-color: #28a745; width: 100%; padding: 12px;" onclick="mulaiScanNFC()">Mulai Scan NFC</button>
+    <p class="mode-desc">Buka halaman ini di Google Chrome HP Android yang memiliki fitur NFC, lalu tekan tombol di bawah.</p>
+    <button class="btn-nfc-hp" onclick="mulaiScanNFC()">📲 Mulai Scan NFC HP</button>
+    <div id="nfcStatusInfo">🟢 Sensor NFC Aktif! Silakan tempelkan kartu ke belakang HP...</div>
   </div>
 
   <!-- KOTAK STATUS & FOTO SISWA -->
@@ -140,102 +159,88 @@
 </div>
 
 <script>
-  // ⚠️ WAJIB GANTI DENGAN URL WEB APP APPS SCRIPT MILIK ANDA (BERAKHIRAN /exec)
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzv3p23ovZsQz5AejNQokETUeT8pyAI7iIQk7aA1bKsEnxBbxGE9WQR9VmP8gFGl0ToSQ/exec";
+  // ⚠️ WAJIB TEMPELKAN LINK WEB APP APPS SCRIPT ANDA DI BAWAH INI (BERAKHIRAN /exec)
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxipFLIbUo8nGGhsD3MXr6TCOW2aUngbIL55caDbAqbiMKkbxWGu94e6X5EgkiHWTLpHg/exec";
 
-  let html5QrCode = null;
-  let isProcessing = false; // Mencegah double scan dalam waktu bersamaan
+  let isProcessing = false;
+  let activeInputId = "rfidInput";
 
-  // Event Listener untuk tombol Enter dari RFID Reader USB
-  document.getElementById("rfidInput").addEventListener("keypress", function(e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      prosesAbsen(this.value.trim());
+  // Event Listener Enter untuk RFID Reader & Alat Scanner QR Code
+  ["rfidInput", "qrScannerInput"].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          prosesAbsen(this.value.trim());
+        }
+      });
     }
   });
 
-  // 1. Konversi Link Google Drive menjadi Direct Image URL
+  // Konversi Link Google Drive menjadi Direct Image URL
   function formatDriveUrl(url) {
     if (!url) return "";
     const match = url.toString().match(/[-\w]{25,}/);
     return match ? "https://lh3.googleusercontent.com/d/" + match[0] : url;
   }
 
-  // 2. Perpindahan Mode Absensi
+  // Perpindahan Tab Mode Absensi
   function switchMode(mode) {
-    document.getElementById('modeRfid').style.display = 'none';
-    document.getElementById('modeQr').style.display = 'none';
-    document.getElementById('modeNfc').style.display = 'none';
+    document.getElementById("modeRfid").style.display = "none";
+    document.getElementById("modeQr").style.display = "none";
+    document.getElementById("modeNfc").style.display = "none";
 
-    document.getElementById('btnRfid').classList.remove('active');
-    document.getElementById('btnQr').classList.remove('active');
-    document.getElementById('btnNfc').classList.remove('active');
+    document.getElementById("btnRfid").classList.remove("active");
+    document.getElementById("btnQr").classList.remove("active");
+    document.getElementById("btnNfc").classList.remove("active");
 
-    // Hentikan kamera QR jika sedang berjalan
-    if (html5QrCode && html5QrCode.isScanning) {
-      html5QrCode.stop().catch(err => console.warn("Stop kamera:", err));
-    }
-
-    if (mode === 'rfid') {
-      document.getElementById('modeRfid').style.display = 'block';
-      document.getElementById('btnRfid').classList.add('active');
-      setTimeout(() => document.getElementById('rfidInput').focus(), 100);
-    } else if (mode === 'qr') {
-      document.getElementById('modeQr').style.display = 'block';
-      document.getElementById('btnQr').classList.add('active');
-      startQrCamera();
-    } else if (mode === 'nfc') {
-      document.getElementById('modeNfc').style.display = 'block';
-      document.getElementById('btnNfc').classList.add('active');
+    if (mode === "rfid") {
+      activeInputId = "rfidInput";
+      document.getElementById("modeRfid").style.display = "block";
+      document.getElementById("btnRfid").classList.add("active");
+      setTimeout(() => document.getElementById("rfidInput").focus(), 100);
+    } else if (mode === "qr") {
+      activeInputId = "qrScannerInput";
+      document.getElementById("modeQr").style.display = "block";
+      document.getElementById("btnQr").classList.add("active");
+      setTimeout(() => document.getElementById("qrScannerInput").focus(), 100);
+    } else if (mode === "nfc") {
+      activeInputId = null;
+      document.getElementById("modeNfc").style.display = "block";
+      document.getElementById("btnNfc").classList.add("active");
     }
   }
 
-  // 3. Jalankan Kamera QR Code Otomatis
-  function startQrCamera() {
-    html5QrCode = new Html5Qrcode("reader");
-    html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 220, height: 220 } },
-      (decodedText) => {
-        if (!isProcessing) {
-          prosesAbsen(decodedText.trim());
-        }
-      },
-      () => {} // Abaikan log frame kosong
-    ).catch(() => {
-      alert("Gagal membuka kamera. Pastikan izin kamera di browser sudah diaktifkan.");
-    });
-  }
-
-  // 4. Jalankan Web NFC API (Chrome Android)
+  // Aktifkan Sensor NFC HP (Khusus Google Chrome di HP Android)
   async function mulaiScanNFC() {
-    if ('NDEFReader' in window) {
+    if ("NDEFReader" in window) {
       try {
         const ndef = new NDEFReader();
         await ndef.scan();
-        alert("Sensor NFC Aktif! Tempelkan kartu ke bagian belakang HP.");
+        document.getElementById("nfcStatusInfo").style.display = "block";
 
         ndef.addEventListener("reading", ({ serialNumber }) => {
           if (!isProcessing && serialNumber) {
-            // Hapus tanda titik dua (:) pada serial number NFC jika ada
+            // Hapus tanda titik dua (:) pada serial number NFC jika ada agar cocok dengan database
             const cleanSerial = serialNumber.replace(/:/g, "").toUpperCase();
             prosesAbsen(cleanSerial);
           }
         });
       } catch (error) {
-        alert("Gagal mengaktifkan NFC: " + error.message);
+        alert("Gagal mengaktifkan NFC: " + error.message + "\nPastikan fitur NFC di pengaturan HP sudah menyala dan izin browser diberikan.");
       }
     } else {
-      alert("Perangkat/Browser ini tidak mendukung NFC. Gunakan Google Chrome di HP Android.");
+      alert("Perangkat atau browser ini tidak mendukung Web NFC.\nGunakan Google Chrome di HP Android yang memiliki sensor NFC.");
     }
   }
 
-  // 5. Kirim ID Kartu ke Google Apps Script
+  // Kirim Kode Kartu (RFID / QR / NFC) ke Google Apps Script
   function prosesAbsen(kodeKartu) {
     if (!kodeKartu || isProcessing) return;
 
-    if (SCRIPT_URL.includes("AKfycb...")) {
-      alert("⚠️ Anda belum mengganti SCRIPT_URL dengan URL Web App Apps Script milik Anda!");
+    if (SCRIPT_URL.includes("TEMPEL_LINK")) {
+      alert("⚠️ Anda belum menempelkan link Web App di SCRIPT_URL!");
       return;
     }
 
@@ -246,7 +251,7 @@
 
     statusBox.style.display = "block";
     statusBox.className = "loading";
-    statusText.innerHTML = "⌛ Memproses data kartu...";
+    statusText.innerHTML = "⌛ Memproses data...";
     fotoElement.style.display = "none";
 
     const requestUrl = `${SCRIPT_URL}?action=getStudent&rfid=${encodeURIComponent(kodeKartu)}`;
@@ -279,14 +284,17 @@
         statusText.innerHTML = "<b>❌ Error Koneksi Server.</b><br><small>Pastikan URL Web App benar & akses diatur ke 'Anyone'.</small>";
       })
       .finally(() => {
-        const rfidInput = document.getElementById("rfidInput");
-        rfidInput.value = "";
-        rfidInput.focus();
+        if (activeInputId) {
+          const currentInput = document.getElementById(activeInputId);
+          if (currentInput) {
+            currentInput.value = "";
+            currentInput.focus();
+          }
+        }
 
-        // Cooldown 2.5 detik sebelum menerima scan berikutnya
         setTimeout(() => {
           isProcessing = false;
-        }, 2500);
+        }, 2000);
       });
   }
 </script>
