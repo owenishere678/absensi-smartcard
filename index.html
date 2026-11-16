@@ -33,9 +33,9 @@
       justify-content: center;
       margin-bottom: 20px;
     }
-    button.tab-btn {
+    button {
       flex: 1;
-      padding: 11px 8px;
+      padding: 11px 10px;
       border: none;
       border-radius: 8px;
       background-color: #007bff;
@@ -45,12 +45,9 @@
       font-size: 13px;
       transition: background 0.2s, transform 0.1s;
     }
-    button.tab-btn:hover { background-color: #0056b3; }
-    button.tab-btn:active { transform: scale(0.98); }
-    button.tab-btn.active {
-      background-color: #28a745;
-      box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-    }
+    button:hover { background-color: #0056b3; }
+    button:active { transform: scale(0.98); }
+    button.active { background-color: #28a745; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3); }
     .mode-section {
       border: 1px solid #e2e8f0;
       padding: 20px;
@@ -71,26 +68,6 @@
       transition: border-color 0.2s;
     }
     input[type="text"]:focus { border-color: #28a745; }
-    .btn-nfc-hp {
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      width: 100%;
-      padding: 13px;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .btn-nfc-hp:hover { background-color: #218838; }
-    #nfcStatusInfo {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #28a745;
-      font-weight: 600;
-      display: none;
-    }
     #statusBox {
       padding: 16px;
       border-radius: 10px;
@@ -98,10 +75,7 @@
       margin-top: 15px;
       animation: fadeIn 0.3s ease;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     .loading { background-color: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
     .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
@@ -124,9 +98,9 @@
   <p class="subtitle">Pilih metode absensi yang digunakan:</p>
 
   <div class="btn-group">
-    <button id="btnRfid" class="tab-btn active" onclick="switchMode('rfid')">💳 RFID Reader</button>
-    <button id="btnQr" class="tab-btn" onclick="switchMode('qr')">🔫 Alat QR Code</button>
-    <button id="btnNfc" class="tab-btn" onclick="switchMode('nfc')">📱 NFC (HP)</button>
+    <button id="btnRfid" class="active" onclick="switchMode('rfid')">💳 RFID Reader</button>
+    <button id="btnQr" onclick="switchMode('qr')">🔫 Alat Scanner QR</button>
+    <button id="btnNfc" onclick="switchMode('nfc')">📱 NFC (HP)</button>
   </div>
 
   <!-- MODE 1: RFID READER -->
@@ -136,19 +110,18 @@
     <input type="text" id="rfidInput" placeholder="Tap kartu RFID di sini..." autofocus autocomplete="off">
   </div>
 
-  <!-- MODE 2: ALAT SCANNER QR CODE -->
+  <!-- MODE 2: ALAT SCANNER QR / BARCODE EKSTERNAL -->
   <div id="modeQr" class="mode-section" style="display: none;">
-    <h4>Scan dengan Alat Scanner QR Code</h4>
-    <p class="mode-desc">Pastikan kursor aktif di dalam kotak di bawah, lalu tembakkan alat scanner ke kode QR.</p>
-    <input type="text" id="qrScannerInput" placeholder="Arahkan alat scanner ke QR Code..." autocomplete="off">
+    <h4>Scan dengan Alat Scanner QR / Barcode</h4>
+    <p class="mode-desc">Pastikan kursor aktif di dalam kotak di bawah, lalu tembakkan alat scanner ke kode QR/Barcode.</p>
+    <input type="text" id="qrScannerInput" placeholder="Arahkan alat scanner QR ke kode..." autocomplete="off">
   </div>
 
-  <!-- MODE 3: NFC MELALUI HP -->
+  <!-- MODE 3: WEB NFC (ANDROID) -->
   <div id="modeNfc" class="mode-section" style="display: none;">
     <h4>Scan NFC Smartphone</h4>
-    <p class="mode-desc">Buka halaman ini di Google Chrome HP Android yang memiliki fitur NFC, lalu tekan tombol di bawah.</p>
-    <button class="btn-nfc-hp" onclick="mulaiScanNFC()">📲 Mulai Scan NFC HP</button>
-    <div id="nfcStatusInfo">🟢 Sensor NFC Aktif! Silakan tempelkan kartu ke belakang HP...</div>
+    <p class="mode-desc">Khusus Google Chrome di HP Android yang memiliki sensor NFC.</p>
+    <button style="background-color: #28a745; width: 100%; padding: 12px;" onclick="mulaiScanNFC()">Mulai Scan NFC</button>
   </div>
 
   <!-- KOTAK STATUS & FOTO SISWA -->
@@ -159,88 +132,89 @@
 </div>
 
 <script>
-  // ⚠️ WAJIB TEMPELKAN LINK WEB APP APPS SCRIPT ANDA DI BAWAH INI (BERAKHIRAN /exec)
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxipFLIbUo8nGGhsD3MXr6TCOW2aUngbIL55caDbAqbiMKkbxWGu94e6X5EgkiHWTLpHg/exec";
+  // ⚠️ WAJIB GANTI DENGAN URL WEB APP APPS SCRIPT MILIK ANDA (BERAKHIRAN /exec)
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzv3p23ovZsQz5AejNQokETUeT8pyAI7iIQk7aA1bKsEnxBbxGE9WQR9VmP8gFGl0ToSQ/exec";
 
   let isProcessing = false;
   let activeInputId = "rfidInput";
 
-  // Event Listener Enter untuk RFID Reader & Alat Scanner QR Code
-  ["rfidInput", "qrScannerInput"].forEach(function (id) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener("keypress", function (e) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          prosesAbsen(this.value.trim());
-        }
-      });
+  // Event Listener Enter untuk RFID Reader
+  document.getElementById("rfidInput").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      prosesAbsen(this.value.trim());
     }
   });
 
-  // Konversi Link Google Drive menjadi Direct Image URL
+  // Event Listener Enter untuk Alat Scanner QR/Barcode
+  document.getElementById("qrScannerInput").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      prosesAbsen(this.value.trim());
+    }
+  });
+
+  // 1. Konversi Link Google Drive menjadi Direct Image URL
   function formatDriveUrl(url) {
     if (!url) return "";
     const match = url.toString().match(/[-\w]{25,}/);
     return match ? "https://lh3.googleusercontent.com/d/" + match[0] : url;
   }
 
-  // Perpindahan Tab Mode Absensi
+  // 2. Perpindahan Mode Absensi
   function switchMode(mode) {
-    document.getElementById("modeRfid").style.display = "none";
-    document.getElementById("modeQr").style.display = "none";
-    document.getElementById("modeNfc").style.display = "none";
+    document.getElementById('modeRfid').style.display = 'none';
+    document.getElementById('modeQr').style.display = 'none';
+    document.getElementById('modeNfc').style.display = 'none';
 
-    document.getElementById("btnRfid").classList.remove("active");
-    document.getElementById("btnQr").classList.remove("active");
-    document.getElementById("btnNfc").classList.remove("active");
+    document.getElementById('btnRfid').classList.remove('active');
+    document.getElementById('btnQr').classList.remove('active');
+    document.getElementById('btnNfc').classList.remove('active');
 
-    if (mode === "rfid") {
+    if (mode === 'rfid') {
       activeInputId = "rfidInput";
-      document.getElementById("modeRfid").style.display = "block";
-      document.getElementById("btnRfid").classList.add("active");
-      setTimeout(() => document.getElementById("rfidInput").focus(), 100);
-    } else if (mode === "qr") {
+      document.getElementById('modeRfid').style.display = 'block';
+      document.getElementById('btnRfid').classList.add('active');
+      setTimeout(() => document.getElementById('rfidInput').focus(), 100);
+    } else if (mode === 'qr') {
       activeInputId = "qrScannerInput";
-      document.getElementById("modeQr").style.display = "block";
-      document.getElementById("btnQr").classList.add("active");
-      setTimeout(() => document.getElementById("qrScannerInput").focus(), 100);
-    } else if (mode === "nfc") {
-      activeInputId = null;
-      document.getElementById("modeNfc").style.display = "block";
-      document.getElementById("btnNfc").classList.add("active");
+      document.getElementById('modeQr').style.display = 'block';
+      document.getElementById('btnQr').classList.add('active');
+      setTimeout(() => document.getElementById('qrScannerInput').focus(), 100);
+    } else if (mode === 'nfc') {
+      document.getElementById('modeNfc').style.display = 'block';
+      document.getElementById('btnNfc').classList.add('active');
     }
   }
 
-  // Aktifkan Sensor NFC HP (Khusus Google Chrome di HP Android)
+  // 3. Jalankan Web NFC API (Chrome Android)
   async function mulaiScanNFC() {
-    if ("NDEFReader" in window) {
+    if ('NDEFReader' in window) {
       try {
         const ndef = new NDEFReader();
         await ndef.scan();
-        document.getElementById("nfcStatusInfo").style.display = "block";
+        alert("Sensor NFC Aktif! Tempelkan kartu ke bagian belakang HP.");
 
         ndef.addEventListener("reading", ({ serialNumber }) => {
           if (!isProcessing && serialNumber) {
-            // Hapus tanda titik dua (:) pada serial number NFC jika ada agar cocok dengan database
             const cleanSerial = serialNumber.replace(/:/g, "").toUpperCase();
             prosesAbsen(cleanSerial);
           }
         });
       } catch (error) {
-        alert("Gagal mengaktifkan NFC: " + error.message + "\nPastikan fitur NFC di pengaturan HP sudah menyala dan izin browser diberikan.");
+        alert("Gagal mengaktifkan NFC: " + error.message);
       }
     } else {
-      alert("Perangkat atau browser ini tidak mendukung Web NFC.\nGunakan Google Chrome di HP Android yang memiliki sensor NFC.");
+      alert("Perangkat/Browser ini tidak mendukung NFC. Gunakan Google Chrome di HP Android.");
     }
   }
 
-  // Kirim Kode Kartu (RFID / QR / NFC) ke Google Apps Script
+  // 4. Kirim ID Kartu / QR ke Google Apps Script
   function prosesAbsen(kodeKartu) {
     if (!kodeKartu || isProcessing) return;
 
-    if (SCRIPT_URL.includes("TEMPEL_LINK")) {
-      alert("⚠️ Anda belum menempelkan link Web App di SCRIPT_URL!");
+    if (SCRIPT_URL.includes("AKfycb...")) {
+      alert("⚠️ Anda belum mengganti SCRIPT_URL dengan URL Web App Apps Script milik Anda!");
       return;
     }
 
@@ -284,12 +258,11 @@
         statusText.innerHTML = "<b>❌ Error Koneksi Server.</b><br><small>Pastikan URL Web App benar & akses diatur ke 'Anyone'.</small>";
       })
       .finally(() => {
-        if (activeInputId) {
-          const currentInput = document.getElementById(activeInputId);
-          if (currentInput) {
-            currentInput.value = "";
-            currentInput.focus();
-          }
+        // Kosongkan input & kembalikan kursor ke kotak aktif (RFID atau Scanner QR)
+        const currentInput = document.getElementById(activeInputId);
+        if (currentInput) {
+          currentInput.value = "";
+          currentInput.focus();
         }
 
         setTimeout(() => {
