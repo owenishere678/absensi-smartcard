@@ -3,273 +3,332 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Absensi Smartcard</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f0f2f5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 15px;
-    }
-    .card {
-      background: #ffffff;
-      padding: 28px;
-      border-radius: 14px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-      width: 100%;
-      max-width: 480px;
-      text-align: center;
-    }
-    h2 { margin: 0 0 6px 0; color: #1a1a1a; }
-    .subtitle { color: #666; font-size: 14px; margin-bottom: 20px; }
-    .btn-group {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-    button {
-      flex: 1;
-      padding: 11px 10px;
-      border: none;
-      border-radius: 8px;
-      background-color: #007bff;
-      color: white;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 13px;
-      transition: background 0.2s, transform 0.1s;
-    }
-    button:hover { background-color: #0056b3; }
-    button:active { transform: scale(0.98); }
-    button.active { background-color: #28a745; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3); }
-    .mode-section {
-      border: 1px solid #e2e8f0;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 18px;
-      background: #f8fafc;
-    }
-    .mode-section h4 { margin: 0 0 8px 0; color: #334155; }
-    .mode-desc { font-size: 12px; color: #64748b; margin: 0 0 12px 0; }
-    input[type="text"] {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid #007bff;
-      border-radius: 8px;
-      text-align: center;
-      font-size: 16px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    input[type="text"]:focus { border-color: #28a745; }
-    #statusBox {
-      padding: 16px;
-      border-radius: 10px;
-      display: none;
-      margin-top: 15px;
-      animation: fadeIn 0.3s ease;
-    }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-    .loading { background-color: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
-    .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    #fotoSiswa {
-      width: 130px;
-      height: 165px;
-      object-fit: cover;
-      border-radius: 8px;
-      margin: 14px auto 0 auto;
-      display: none;
-      border: 3px solid #28a745;
-      background: #fff;
-    }
-  </style>
+  <title>SMART ATTENDANCE SYSTEM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Library Scan QR Kamera (html5-qrcode) -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
 
-<div class="card">
-  <h2>Sistem Absensi</h2>
-  <p class="subtitle">Pilih metode absensi yang digunakan:</p>
+  <!-- TOP NAVIGATION BAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="school-logo" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+          <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+        </svg>
+      </div>
+      <div>
+        <span class="school-name" id="schoolNameDisplay">SMP NEGERI / SEKOLAH SMART</span>
+        <h1 class="app-title">SMART ATTENDANCE SYSTEM</h1>
+      </div>
+    </div>
 
-  <div class="btn-group">
-    <button id="btnRfid" class="active" onclick="switchMode('rfid')">💳 RFID Reader</button>
-    <button id="btnQr" onclick="switchMode('qr')">🔫 Alat Scanner QR</button>
-    <button id="btnNfc" onclick="switchMode('nfc')">📱 NFC (HP)</button>
+    <div class="topbar-right">
+      <div class="clock-box">
+        <div id="liveDate" class="live-date">Memuat tanggal...</div>
+        <div id="liveClock" class="live-clock">00:00:00 WIB</div>
+      </div>
+      <div class="cutoff-badge">
+        <span>Batas Hadir</span>
+        <strong>07:45 WIB</strong>
+      </div>
+      <button id="btnToggleAdmin" class="btn-admin-nav" onclick="openAdminView()">
+        🔒 Admin
+      </button>
+    </div>
+  </header>
+
+  <!-- STATUS BAR & STATISTIK HARIAN -->
+  <section class="status-strip">
+    <div class="db-status" id="dbStatusBadge">
+      <span class="dot offline" id="dbDot"></span>
+      <span id="dbStatusText">Menghubungkan ke Google Sheets...</span>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-pill stat-present">
+        <span class="stat-label">Hadir Tepat Waktu</span>
+        <strong id="statPresentCount">0</strong>
+      </div>
+      <div class="stat-pill stat-late">
+        <span class="stat-label">Terlambat</span>
+        <strong id="statLateCount">0</strong>
+      </div>
+      <div class="stat-pill stat-total">
+        <span class="stat-label">Total Masuk Hari Ini</span>
+        <strong id="statTotalCount">0</strong>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== HALAMAN UTAMA ABSENSI SISWA ==================== -->
+  <main id="kioskView" class="container">
+
+    <!-- 4 TOMBOL METODE ABSENSI -->
+    <div class="method-grid" role="tablist">
+      <button id="tab-rfid" class="method-btn active" onclick="selectMethod('RFID')">
+        <span class="method-icon">💳</span>
+        <span class="method-title">RFID CARD</span>
+        <span class="method-sub">Tap Kartu Smartcard</span>
+      </button>
+
+      <button id="tab-qr" class="method-btn" onclick="selectMethod('QR CODE')">
+        <span class="method-icon">📷</span>
+        <span class="method-title">QR CODE</span>
+        <span class="method-sub">Kamera / Alat Scanner</span>
+      </button>
+
+      <button id="tab-nfc" class="method-btn" onclick="selectMethod('NFC')">
+        <span class="method-icon">📱</span>
+        <span class="method-title">NFC</span>
+        <span class="method-sub">Tap NFC Smartphone</span>
+      </button>
+
+      <button id="tab-manual" class="method-btn" onclick="selectMethod('MANUAL')">
+        <span class="method-icon">⌨️</span>
+        <span class="method-title">INPUT NIS MANUAL</span>
+        <span class="method-sub">Tanpa Membawa Kartu</span>
+      </button>
+    </div>
+
+    <!-- PANEL INTERAKSI UTAMA -->
+    <div class="workspace-card">
+
+      <!-- 1. PANEL RFID -->
+      <div id="panel-rfid" class="method-panel active">
+        <div class="panel-header">
+          <h2>Absensi Kartu RFID</h2>
+          <p>Tempelkan Smartcard pada RFID Reader USB atau hubungkan perangkat Serial.</p>
+        </div>
+
+        <div class="scanner-box">
+          <div class="pulse-ring">💳</div>
+          <input type="text" id="rfidInput" class="scan-input" placeholder="Siap memindai UID RFID..." autofocus autocomplete="off">
+          <p class="helper-text">Otomatis memproses saat kartu ditempelkan ke reader.</p>
+        </div>
+
+        <div class="serial-bar">
+          <button type="button" id="btnWebSerial" class="btn-secondary" onclick="connectWebSerial()">
+            🔌 Hubungkan RFID Reader Serial (Web Serial API)
+          </button>
+          <span id="serialStatus" class="serial-status"></span>
+        </div>
+      </div>
+
+      <!-- 2. PANEL QR CODE -->
+      <div id="panel-qr" class="method-panel">
+        <div class="panel-header">
+          <h2>Absensi QR Code</h2>
+          <p>Gunakan QR Scanner eksternal atau aktifkan kamera laptop/HP di bawah ini.</p>
+        </div>
+
+        <div class="qr-dual-layout">
+          <div class="qr-hardware-box">
+            <label for="qrHardwareInput"><strong>Opsi 1: QR Scanner Eksternal (USB/Bluetooth)</strong></label>
+            <input type="text" id="qrHardwareInput" class="scan-input" placeholder="Arahkan alat scanner ke QR Code..." autocomplete="off">
+          </div>
+
+          <div class="qr-camera-box">
+            <div class="camera-controls">
+              <button type="button" id="btnStartCamera" class="btn-primary" onclick="startQrCamera()">📷 Aktifkan Kamera</button>
+              <button type="button" id="btnStopCamera" class="btn-danger hidden" onclick="stopQrCamera()">⏹ Matikan Kamera</button>
+            </div>
+            <div id="qrReaderContainer" class="qr-reader-frame hidden"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. PANEL NFC -->
+      <div id="panel-nfc" class="method-panel">
+        <div class="panel-header">
+          <h2>Absensi NFC Smartphone</h2>
+          <p>Khusus smartphone Android dengan sensor NFC aktif menggunakan Google Chrome.</p>
+        </div>
+
+        <div id="nfcSupportAlert" class="alert-box warning hidden"></div>
+
+        <div class="nfc-action-area">
+          <button type="button" id="btnStartNfc" class="btn-primary btn-large" onclick="startNfcReader()">
+            📲 Mulai Pembacaan NFC
+          </button>
+          <div id="nfcListeningIndicator" class="nfc-listening hidden">
+            <span class="spinner"></span> Menunggu kartu NFC ditempelkan ke belakang HP...
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. PANEL INPUT NIS MANUAL -->
+      <div id="panel-manual" class="method-panel">
+        <div class="panel-header">
+          <h2>Input Nomor Induk Siswa (NIS)</h2>
+          <p>Masukkan NIS Anda untuk mencari identitas sebelum mengonfirmasi kehadiran.</p>
+        </div>
+
+        <form id="manualSearchForm" class="manual-form" onsubmit="searchStudentByNis(event)">
+          <input type="text" id="manualNisInput" class="scan-input" placeholder="Contoh: 2026001" required autocomplete="off">
+          <button type="submit" class="btn-primary btn-large">🔍 Cari Data Siswa</button>
+        </form>
+
+        <!-- PREVIEW SISWA SEBELUM KONFIRMASI -->
+        <div id="manualPreviewCard" class="manual-preview hidden">
+          <img id="previewPhoto" src="" alt="Foto Siswa" class="preview-avatar">
+          <div class="preview-info">
+            <span class="badge-navy">DATA DITEMUKAN</span>
+            <h3 id="previewName">-</h3>
+            <p>NIS: <strong id="previewNis">-</strong></p>
+            <button type="button" id="btnConfirmManual" class="btn-success btn-large" onclick="confirmManualAttendance()">
+              ✅ KONFIRMASI ABSENSI
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ANTREAN OFFLINE JIKA KONEKSI TERPUTUS -->
+    <div id="offlineQueueBanner" class="offline-banner hidden">
+      <span>⚠️ Terdapat <strong id="offlineCount">0</strong> data absensi tertunda karena gangguan jaringan.</span>
+      <button type="button" class="btn-small" onclick="flushOfflineQueue()">Kirim Ulang Sekarang</button>
+    </div>
+
+  </main>
+
+  <!-- ==================== OVERLAY LAYAR KONFIRMASI HASIL ABSENSI ==================== -->
+  <div id="resultModal" class="result-overlay hidden" role="dialog" aria-modal="true">
+    <div id="resultCard" class="result-modal-card">
+      <div id="resultStatusBanner" class="result-banner">STATUS</div>
+
+      <div class="result-body">
+        <img id="resultPhoto" src="" alt="Foto Siswa" class="result-photo">
+        <div class="result-details">
+          <h2 id="resultMessage" class="result-message">ABSENSI BERHASIL!</h2>
+          <h3 id="resultStudentName" class="result-name">-</h3>
+          <div class="result-meta-grid">
+            <div><span>Nomor NIS</span><strong id="resultNis">-</strong></div>
+            <div><span>Metode</span><strong id="resultMethod">-</strong></div>
+            <div><span>Tanggal</span><strong id="resultDate">-</strong></div>
+            <div><span>Jam Tercatat</span><strong id="resultTime">-</strong></div>
+          </div>
+          <div id="resultExtraNote" class="result-extra-note hidden"></div>
+        </div>
+      </div>
+
+      <div class="result-footer">
+        <div class="countdown-bar"><div id="countdownProgress" class="countdown-fill"></div></div>
+        <button type="button" class="btn-secondary" onclick="closeResultModal()">Kembali ke Layar Utama Sekarang</button>
+      </div>
+    </div>
   </div>
 
-  <!-- MODE 1: RFID READER -->
-  <div id="modeRfid" class="mode-section">
-    <h4>Tempelkan Kartu RFID</h4>
-    <p class="mode-desc">Pastikan kursor aktif di dalam kotak di bawah ini sebelum menempelkan kartu.</p>
-    <input type="text" id="rfidInput" placeholder="Tap kartu RFID di sini..." autofocus autocomplete="off">
-  </div>
+  <!-- ==================== HALAMAN DASHBOARD ADMIN ==================== -->
+  <section id="adminView" class="container hidden">
 
-  <!-- MODE 2: ALAT SCANNER QR / BARCODE EKSTERNAL -->
-  <div id="modeQr" class="mode-section" style="display: none;">
-    <h4>Scan dengan Alat Scanner QR / Barcode</h4>
-    <p class="mode-desc">Pastikan kursor aktif di dalam kotak di bawah, lalu tembakkan alat scanner ke kode QR/Barcode.</p>
-    <input type="text" id="qrScannerInput" placeholder="Arahkan alat scanner QR ke kode..." autocomplete="off">
-  </div>
+    <!-- FORM LOGIN ADMIN -->
+    <div id="adminLoginBox" class="admin-login-card">
+      <h2>Login Dashboard Admin</h2>
+      <p>Masukkan kredensial administrator sekolah untuk mengakses laporan kehadiran.</p>
+      <form onsubmit="handleAdminLogin(event)">
+        <div class="form-group">
+          <label for="adminUser">Username Admin</label>
+          <input type="text" id="adminUser" class="form-control" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="adminPass">Password</label>
+          <input type="password" id="adminPass" class="form-control" required autocomplete="current-password">
+        </div>
+        <div id="adminLoginError" class="alert-box error hidden"></div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeAdminView()">← Kembali ke Absensi</button>
+          <button type="submit" class="btn-primary">Masuk Dashboard</button>
+        </div>
+      </form>
+    </div>
 
-  <!-- MODE 3: WEB NFC (ANDROID) -->
-  <div id="modeNfc" class="mode-section" style="display: none;">
-    <h4>Scan NFC Smartphone</h4>
-    <p class="mode-desc">Khusus Google Chrome di HP Android yang memiliki sensor NFC.</p>
-    <button style="background-color: #28a745; width: 100%; padding: 12px;" onclick="mulaiScanNFC()">Mulai Scan NFC</button>
-  </div>
+    <!-- KONTEN DASHBOARD ADMIN -->
+    <div id="adminDashboardContent" class="hidden">
+      <div class="admin-header">
+        <div>
+          <h2>Dashboard Administrator</h2>
+          <p>Data aktual terintegrasi langsung dengan Google Sheets</p>
+        </div>
+        <div class="admin-header-actions">
+          <button type="button" class="btn-secondary" onclick="refreshAdminData()">🔄 Refresh Data</button>
+          <button type="button" class="btn-success" onclick="exportToCsv()">📥 Ekspor Laporan (CSV / Excel)</button>
+          <button type="button" class="btn-danger" onclick="logoutAdmin()">Keluar</button>
+        </div>
+      </div>
 
-  <!-- KOTAK STATUS & FOTO SISWA -->
-  <div id="statusBox">
-    <div id="statusText"></div>
-    <img id="fotoSiswa" src="" alt="Foto Siswa">
-  </div>
-</div>
+      <!-- 5 METRIK UTAMA ADMIN -->
+      <div class="admin-kpi-grid">
+        <div class="kpi-card">
+          <span>Total Siswa Terdaftar</span>
+          <strong id="kpiTotalStudents">0</strong>
+        </div>
+        <div class="kpi-card kpi-green">
+          <span>Hadir Hari Ini</span>
+          <strong id="kpiPresentToday">0</strong>
+        </div>
+        <div class="kpi-card kpi-amber">
+          <span>Terlambat Hari Ini</span>
+          <strong id="kpiLateToday">0</strong>
+        </div>
+        <div class="kpi-card kpi-red">
+          <span>Belum Absensi</span>
+          <strong id="kpiAbsentToday">0</strong>
+        </div>
+        <div class="kpi-card kpi-navy">
+          <span>Persentase Kehadiran</span>
+          <strong id="kpiAttendanceRate">0%</strong>
+        </div>
+      </div>
 
-<script>
-  // ⚠️ WAJIB GANTI DENGAN URL WEB APP APPS SCRIPT MILIK ANDA (BERAKHIRAN /exec)
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzv3p23ovZsQz5AejNQokETUeT8pyAI7iIQk7aA1bKsEnxBbxGE9WQR9VmP8gFGl0ToSQ/exec";
+      <!-- FILTER & PENCARIAN -->
+      <div class="filter-bar">
+        <input type="text" id="filterSearch" class="form-control" placeholder="Cari Nama Siswa atau NIS..." oninput="applyAdminFilters()">
+        <input type="date" id="filterDate" class="form-control" onchange="applyAdminFilters()">
+        <select id="filterMethod" class="form-control" onchange="applyAdminFilters()">
+          <option value="">Semua Metode</option>
+          <option value="RFID">RFID</option>
+          <option value="QR CODE">QR CODE</option>
+          <option value="NFC">NFC</option>
+          <option value="MANUAL">MANUAL</option>
+        </select>
+        <select id="filterStatus" class="form-control" onchange="applyAdminFilters()">
+          <option value="">Semua Status</option>
+          <option value="HADIR">HADIR</option>
+          <option value="TERLAMBAT">TERLAMBAT</option>
+        </select>
+        <button type="button" class="btn-secondary" onclick="resetAdminFilters()">Reset</button>
+      </div>
 
-  let isProcessing = false;
-  let activeInputId = "rfidInput";
+      <!-- TABEL RIWAYAT ABSENSI -->
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Jam</th>
+              <th>NIS</th>
+              <th>Nama Siswa</th>
+              <th>Metode</th>
+              <th>Kode Kartu</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody">
+            <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-  // Event Listener Enter untuk RFID Reader
-  document.getElementById("rfidInput").addEventListener("keypress", function(e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      prosesAbsen(this.value.trim());
-    }
-  });
+  </section>
 
-  // Event Listener Enter untuk Alat Scanner QR/Barcode
-  document.getElementById("qrScannerInput").addEventListener("keypress", function(e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      prosesAbsen(this.value.trim());
-    }
-  });
-
-  // 1. Konversi Link Google Drive menjadi Direct Image URL
-  function formatDriveUrl(url) {
-    if (!url) return "";
-    const match = url.toString().match(/[-\w]{25,}/);
-    return match ? "https://lh3.googleusercontent.com/d/" + match[0] : url;
-  }
-
-  // 2. Perpindahan Mode Absensi
-  function switchMode(mode) {
-    document.getElementById('modeRfid').style.display = 'none';
-    document.getElementById('modeQr').style.display = 'none';
-    document.getElementById('modeNfc').style.display = 'none';
-
-    document.getElementById('btnRfid').classList.remove('active');
-    document.getElementById('btnQr').classList.remove('active');
-    document.getElementById('btnNfc').classList.remove('active');
-
-    if (mode === 'rfid') {
-      activeInputId = "rfidInput";
-      document.getElementById('modeRfid').style.display = 'block';
-      document.getElementById('btnRfid').classList.add('active');
-      setTimeout(() => document.getElementById('rfidInput').focus(), 100);
-    } else if (mode === 'qr') {
-      activeInputId = "qrScannerInput";
-      document.getElementById('modeQr').style.display = 'block';
-      document.getElementById('btnQr').classList.add('active');
-      setTimeout(() => document.getElementById('qrScannerInput').focus(), 100);
-    } else if (mode === 'nfc') {
-      document.getElementById('modeNfc').style.display = 'block';
-      document.getElementById('btnNfc').classList.add('active');
-    }
-  }
-
-  // 3. Jalankan Web NFC API (Chrome Android)
-  async function mulaiScanNFC() {
-    if ('NDEFReader' in window) {
-      try {
-        const ndef = new NDEFReader();
-        await ndef.scan();
-        alert("Sensor NFC Aktif! Tempelkan kartu ke bagian belakang HP.");
-
-        ndef.addEventListener("reading", ({ serialNumber }) => {
-          if (!isProcessing && serialNumber) {
-            const cleanSerial = serialNumber.replace(/:/g, "").toUpperCase();
-            prosesAbsen(cleanSerial);
-          }
-        });
-      } catch (error) {
-        alert("Gagal mengaktifkan NFC: " + error.message);
-      }
-    } else {
-      alert("Perangkat/Browser ini tidak mendukung NFC. Gunakan Google Chrome di HP Android.");
-    }
-  }
-
-  // 4. Kirim ID Kartu / QR ke Google Apps Script
-  function prosesAbsen(kodeKartu) {
-    if (!kodeKartu || isProcessing) return;
-
-    if (SCRIPT_URL.includes("AKfycb...")) {
-      alert("⚠️ Anda belum mengganti SCRIPT_URL dengan URL Web App Apps Script milik Anda!");
-      return;
-    }
-
-    isProcessing = true;
-    const statusBox = document.getElementById("statusBox");
-    const statusText = document.getElementById("statusText");
-    const fotoElement = document.getElementById("fotoSiswa");
-
-    statusBox.style.display = "block";
-    statusBox.className = "loading";
-    statusText.innerHTML = "⌛ Memproses data...";
-    fotoElement.style.display = "none";
-
-    const requestUrl = `${SCRIPT_URL}?action=getStudent&rfid=${encodeURIComponent(kodeKartu)}`;
-
-    fetch(requestUrl, {
-      method: "GET",
-      redirect: "follow"
-    })
-      .then(response => {
-        if (!response.ok) throw new Error("HTTP Error " + response.status);
-        return response.json();
-      })
-      .then(data => {
-        if (data.status === "success") {
-          statusBox.className = "success";
-          statusText.innerHTML = `<b>✅ Berhasil: ${data.nama}</b><br><small>Kelas: ${data.kelas} | Waktu: ${data.waktu}</small>`;
-
-          if (data.foto) {
-            fotoElement.src = formatDriveUrl(data.foto);
-            fotoElement.style.display = "block";
-          }
-        } else {
-          statusBox.className = "error";
-          statusText.innerHTML = `<b>❌ Gagal:</b> ${data.message}`;
-        }
-      })
-      .catch(err => {
-        console.error("Fetch error:", err);
-        statusBox.className = "error";
-        statusText.innerHTML = "<b>❌ Error Koneksi Server.</b><br><small>Pastikan URL Web App benar & akses diatur ke 'Anyone'.</small>";
-      })
-      .finally(() => {
-        // Kosongkan input & kembalikan kursor ke kotak aktif (RFID atau Scanner QR)
-        const currentInput = document.getElementById(activeInputId);
-        if (currentInput) {
-          currentInput.value = "";
-          currentInput.focus();
-        }
-
-        setTimeout(() => {
-          isProcessing = false;
-        }, 2000);
-      });
-  }
-</script>
+  <script src="app.js"></script>
 </body>
 </html>
